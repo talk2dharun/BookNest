@@ -1,0 +1,28 @@
+# Phase 0: database only.
+# Backend and frontend services are added in a later phase.
+# Host port defaults to 5432. Set POSTGRES_PORT=5433 in the root .env if 5432 is already in use.
+
+services:
+  db:
+    image: postgres:18-alpine
+    container_name: booknest-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: booknest
+      POSTGRES_PASSWORD: booknest
+      POSTGRES_DB: booknest
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      # Postgres 18 image stores data under /var/lib/postgresql (not /var/lib/postgresql/data).
+      - booknest_pgdata:/var/lib/postgresql
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U booknest -d booknest"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  booknest_pgdata:
