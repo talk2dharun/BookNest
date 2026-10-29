@@ -1,4 +1,6 @@
 import { Controller, Get, ServiceUnavailableException } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
+import { Public } from './common/decorators/public.decorator.js';
 import { AppService } from './app.service.js';
 import { PrismaService } from './prisma/prisma.service.js';
 
@@ -14,16 +16,15 @@ export class AppController {
     return this.appService.getHello();
   }
 
+  @Public()
+  @SkipThrottle()
   @Get('health')
   async health() {
     try {
       await this.prisma.$queryRaw`SELECT 1`;
       return { status: 'ok', database: 'up' };
     } catch {
-      throw new ServiceUnavailableException({
-        status: 'error',
-        database: 'down',
-      });
+      throw new ServiceUnavailableException('Database is unavailable');
     }
   }
 }
