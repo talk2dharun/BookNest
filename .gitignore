@@ -6,6 +6,7 @@ dist/
 .next/
 out/
 build/
+*.tsbuildinfo
 
 # Environment (never commit real secrets)
 .env
@@ -28,6 +29,7 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 
-# Prisma
+# Prisma generated client (run npx prisma generate after clone)
+backend/src/generated/
 backend/prisma/*.db
 backend/prisma/*.db-journal

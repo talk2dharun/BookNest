@@ -1,0 +1,175 @@
+// BookNest data model. Connection URL lives in prisma.config.ts (Prisma 7).
+// Emails are stored lowercase in application code; uniqueness is enforced here.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum BookStatus {
+  WANT_TO_READ
+  READING
+  FINISHED
+}
+
+enum ShelfRole {
+  EDITOR
+  VIEWER
+}
+
+enum ActivityType {
+  BOOK_ADDED
+  STATUS_CHANGED
+  BOOK_LENT
+  BOOK_RETURNED
+  SHELF_SHARED
+  ROLE_CHANGED
+  COLLABORATOR_REMOVED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  refreshTokens      RefreshToken[]
+  books              Book[]              @relation("BookOwner")
+  shelves            Shelf[]             @relation("ShelfOwner")
+  shelfBooksAdded    ShelfBook[]         @relation("ShelfBookAddedBy")
+  shelfShares        ShelfShare[]
+  lendingsGiven      Lending[]           @relation("LendingLender")
+  lendingsReceived   Lending[]           @relation("LendingBorrower")
+  activities         Activity[]          @relation("ActivityActor")
+  targetedActivities Activity[]          @relation("ActivityTarget")
+  activityFeed       ActivityRecipient[]
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  // Store only a hash of the refresh token, never the raw value.
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Book {
+  id          String     @id @default(uuid())
+  ownerId     String
+  title       String
+  author      String
+  status      BookStatus
+  totalPages  Int?
+  currentPage Int        @default(0)
+  rating      Int?
+  notes       String?
+  finishedAt  DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  owner      User        @relation("BookOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  shelfBooks ShelfBook[]
+  lendings   Lending[]
+  activities Activity[]
+
+  // Deleting a book cascades to ShelfBook and Lending (no orphaned rows).
+  @@index([ownerId, status, createdAt])
+}
+
+model Shelf {
+  id        String   @id @default(uuid())
+  ownerId   String
+  name      String
+  createdAt DateTime @default(now())
+
+  owner      User         @relation("ShelfOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  books      ShelfBook[]
+  shares     ShelfShare[]
+  activities Activity[]
+
+  // Deleting a shelf cascades to ShelfBook and ShelfShare, never to Book rows.
+}
+
+model ShelfBook {
+  shelfId   String
+  bookId    String
+  addedById String
+  addedAt   DateTime @default(now())
+
+  shelf   Shelf @relation(fields: [shelfId], references: [id], onDelete: Cascade)
+  book    Book  @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  addedBy User  @relation("ShelfBookAddedBy", fields: [addedById], references: [id], onDelete: Restrict)
+
+  @@id([shelfId, bookId])
+}
+
+model ShelfShare {
+  id      String    @id @default(uuid())
+  shelfId String
+  userId  String
+  role    ShelfRole
+
+  shelf Shelf @relation(fields: [shelfId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([shelfId, userId])
+  @@index([userId])
+}
+
+model Lending {
+  id         String    @id @default(uuid())
+  bookId     String
+  lenderId   String
+  borrowerId String
+  lentAt     DateTime  @default(now())
+  returnedAt DateTime?
+
+  book     Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  lender   User @relation("LendingLender", fields: [lenderId], references: [id], onDelete: Restrict)
+  borrower User @relation("LendingBorrower", fields: [borrowerId], references: [id], onDelete: Restrict)
+
+  @@index([borrowerId])
+  @@index([bookId])
+  // Partial unique index (one ACTIVE lending per book) is added in SQL:
+  // prisma/migrations/*_lending_active_partial_unique/migration.sql
+}
+
+model Activity {
+  id           String       @id @default(uuid())
+  actorId      String
+  type         ActivityType
+  bookId       String?
+  shelfId      String?
+  targetUserId String?
+  message      String
+  createdAt    DateTime     @default(now())
+
+  actor      User                 @relation("ActivityActor", fields: [actorId], references: [id], onDelete: Cascade)
+  book       Book?                @relation(fields: [bookId], references: [id], onDelete: SetNull)
+  shelf      Shelf?               @relation(fields: [shelfId], references: [id], onDelete: SetNull)
+  targetUser User?                @relation("ActivityTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+  recipients ActivityRecipient[]
+}
+
+model ActivityRecipient {
+  activityId String
+  userId     String
+  createdAt  DateTime @default(now())
+
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([activityId, userId])
+  @@index([userId, createdAt])
+}
