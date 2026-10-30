@@ -34,7 +34,12 @@ export class LendingService {
   async lend(ownerId: string, bookId: string, dto: LendBookDto) {
     const book = await this.prisma.book.findFirst({
       where: { id: bookId, ownerId },
-      select: { id: true, title: true, ownerId: true },
+      select: {
+        id: true,
+        title: true,
+        ownerId: true,
+        owner: { select: { id: true, name: true, email: true } },
+      },
     });
     if (!book) {
       throw new NotFoundException('Book not found');
@@ -109,6 +114,14 @@ export class LendingService {
       type: ActivityType.BOOK_LENT,
       message: `Lent "${book.title}" to ${borrower.name}`,
     });
+
+    console.log(
+      `\n[MOCK EMAIL NOTIFICATION]\n` +
+      `To: ${borrower.email} (${borrower.name})\n` +
+      `From: ${book.owner?.email ?? 'noreply@booknest.app'}\n` +
+      `Subject: "${book.title}" has been lent to you!\n` +
+      `Message: Hi ${borrower.name}, ${book.owner?.name ?? 'A friend'} has lent you their copy of "${book.title}". You can now view it under your Borrowed books.\n`,
+    );
 
     return payload;
   }
