@@ -1,0 +1,114 @@
+@import "tailwindcss";
+
+:root {
+  --paper: #f6f1e7;
+  --ink: #1f2937;
+  --ink-muted: #6b7280;
+  --border: #e5ddd0;
+  --muted: #efe7d8;
+  --want: #d97706;
+  --reading: #0284c7;
+  --finished: #059669;
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-serif: var(--font-geist-sans);
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: var(--ink);
+  color: white;
+}
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: white;
+  color: var(--ink);
+}
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: #b91c1c;
+  color: white;
+}
+.btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.field {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: white;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.95rem;
+}
+.field:disabled {
+  background: var(--muted);
+}
+.label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+.badge-want,
+.badge-reading,
+.badge-finished {
+  display: inline-flex;
+  border-radius: 9999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.badge-want {
+  background: #fef3c7;
+  color: #92400e;
+}
+.badge-reading {
+  background: #e0f2fe;
+  color: #075985;
+}
+.badge-finished {
+  background: #d1fae5;
+  color: #065f46;
+}
+.error-text {
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  color: #b91c1c;
+}
