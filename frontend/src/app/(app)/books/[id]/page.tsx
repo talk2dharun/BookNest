@@ -70,8 +70,22 @@ export default function BookDetailPage() {
   async function onSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const ratingRaw = String(form.get('rating') ?? '');
+    const ratingRaw = String(form.get('rating') ?? '').trim();
     const pagesRaw = String(form.get('totalPages') ?? '');
+
+    // Frontend validation
+    const next: Record<string, string> = {};
+    if (!String(form.get('title') ?? '').trim()) next.title = 'Title is required';
+    if (!String(form.get('author') ?? '').trim()) next.author = 'Author is required';
+    if (ratingRaw) {
+      const r = Number(ratingRaw);
+      if (!Number.isInteger(r) || r < 1 || r > 5) next.rating = 'Rating must be a whole number between 1 and 5';
+    }
+    if (Object.keys(next).length > 0) {
+      setFieldErrors(next);
+      return;
+    }
+
     await run('save', async () => {
       await api(`/books/${id}`, {
         method: 'PATCH',
@@ -101,10 +115,15 @@ export default function BookDetailPage() {
   async function onLend(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+    const email = String(form.get('email') ?? '').trim();
+    if (!email) {
+      setFieldErrors((prev) => ({ ...prev, email: 'Borrower email is required' }));
+      return;
+    }
     await run('lend', async () => {
       await api(`/books/${id}/lend`, {
         method: 'POST',
-        json: { email: String(form.get('email') ?? '') },
+        json: { email },
       });
     });
   }
@@ -113,6 +132,10 @@ export default function BookDetailPage() {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const shelfId = String(form.get('shelfId') ?? '');
+    if (!shelfId) {
+      setFieldErrors((prev) => ({ ...prev, shelfId: 'Please choose a shelf' }));
+      return;
+    }
     await run('shelf', async () => {
       await api(`/shelves/${shelfId}/books`, {
         method: 'POST',
@@ -158,7 +181,7 @@ export default function BookDetailPage() {
 
       {isOwner ? (
         <>
-          <form onSubmit={onSave} className="grid gap-3 rounded-2xl bg-white p-4 shadow-sm md:grid-cols-2">
+          <form onSubmit={onSave} noValidate className="grid gap-3 rounded-2xl bg-white p-4 shadow-sm md:grid-cols-2">
             <div>
               <label className="label" htmlFor="title">Title</label>
               <input id="title" name="title" className="field" defaultValue={book.title} />
@@ -211,7 +234,7 @@ export default function BookDetailPage() {
             </button>
           </form>
 
-          <form onSubmit={onProgress} className="rounded-2xl bg-white p-4 shadow-sm">
+          <form onSubmit={onProgress} noValidate className="rounded-2xl bg-white p-4 shadow-sm">
             <h2 className="mb-3 font-semibold">Log progress</h2>
             <label className="label" htmlFor="currentPage">Current page</label>
             <input
@@ -242,10 +265,10 @@ export default function BookDetailPage() {
               {pending === 'return' ? 'Returning...' : 'Mark returned'}
             </button>
           ) : (
-            <form onSubmit={onLend} className="rounded-2xl bg-white p-4 shadow-sm">
+            <form onSubmit={onLend} noValidate className="rounded-2xl bg-white p-4 shadow-sm">
               <h2 className="mb-3 font-semibold">Lend this book</h2>
               <label className="label" htmlFor="email">Borrower email</label>
-              <input id="email" name="email" type="email" className="field max-w-sm" required />
+              <input id="email" name="email" type="email" className="field max-w-sm" />
               {fieldErrors.email ? <p className="error-text">{fieldErrors.email}</p> : null}
               <button className="btn mt-3" disabled={pending !== null}>
                 {pending === 'lend' ? 'Lending...' : 'Lend book'}
@@ -253,9 +276,9 @@ export default function BookDetailPage() {
             </form>
           )}
 
-          <form onSubmit={onAddToShelf} className="rounded-2xl bg-white p-4 shadow-sm">
+          <form onSubmit={onAddToShelf} noValidate className="rounded-2xl bg-white p-4 shadow-sm">
             <h2 className="mb-3 font-semibold">Add to a shelf</h2>
-            <select name="shelfId" className="field max-w-sm" required>
+            <select name="shelfId" className="field max-w-sm">
               <option value="">Choose a shelf</option>
               {(shelvesQuery.data ?? []).map((shelf) => (
                 <option key={shelf.id} value={shelf.id}>
@@ -263,6 +286,7 @@ export default function BookDetailPage() {
                 </option>
               ))}
             </select>
+            {fieldErrors.shelfId ? <p className="error-text">{fieldErrors.shelfId}</p> : null}
             <button className="btn mt-3" disabled={pending !== null}>
               {pending === 'shelf' ? 'Adding...' : 'Add to shelf'}
             </button>

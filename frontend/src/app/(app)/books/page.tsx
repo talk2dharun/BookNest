@@ -98,6 +98,21 @@ function BooksPageInner() {
     const form = new FormData(event.currentTarget);
     setFormError('');
     setFieldErrors({});
+
+    // Frontend validation
+    const next: Record<string, string> = {};
+    if (!String(form.get('title') ?? '').trim()) next.title = 'Title is required';
+    if (!String(form.get('author') ?? '').trim()) next.author = 'Author is required';
+    const ratingRaw = String(form.get('rating') ?? '').trim();
+    if (ratingRaw) {
+      const r = Number(ratingRaw);
+      if (!Number.isInteger(r) || r < 1 || r > 5) next.rating = 'Rating must be a whole number between 1 and 5';
+    }
+    if (Object.keys(next).length > 0) {
+      setFieldErrors(next);
+      return;
+    }
+
     setPending(true);
     try {
       const created = await api<Book>('/books', {
@@ -106,9 +121,9 @@ function BooksPageInner() {
           title: String(form.get('title') ?? ''),
           author: String(form.get('author') ?? ''),
           status: String(form.get('status') ?? 'WANT_TO_READ'),
-          totalPages: form.get('totalPages')
-            ? Number(form.get('totalPages'))
-            : undefined,
+          totalPages: form.get('totalPages') ? Number(form.get('totalPages')) : undefined,
+          rating: ratingRaw ? Number(ratingRaw) : undefined,
+          notes: String(form.get('notes') ?? '').trim() || undefined,
         },
       });
       await queryClient.invalidateQueries({ queryKey: ['books'] });
@@ -117,7 +132,7 @@ function BooksPageInner() {
     } catch (err) {
       setFormError(err instanceof ApiError ? err.message : 'Could not add book');
       setFieldErrors(
-        fieldErrorsFrom(err, ['title', 'author', 'status', 'totalPages']),
+        fieldErrorsFrom(err, ['title', 'author', 'status', 'totalPages', 'rating', 'notes']),
       );
     } finally {
       setPending(false);
@@ -157,15 +172,15 @@ function BooksPageInner() {
       </div>
 
       {creating ? (
-        <form onSubmit={onCreate} className="grid gap-3 rounded-2xl bg-white p-4 shadow-sm md:grid-cols-2">
+        <form onSubmit={onCreate} noValidate className="grid gap-3 rounded-2xl bg-white p-4 shadow-sm md:grid-cols-2">
           <div>
             <label className="label" htmlFor="title">Title</label>
-            <input id="title" name="title" className="field" required />
+            <input id="title" name="title" className="field" />
             {fieldErrors.title ? <p className="error-text">{fieldErrors.title}</p> : null}
           </div>
           <div>
             <label className="label" htmlFor="author">Author</label>
-            <input id="author" name="author" className="field" required />
+            <input id="author" name="author" className="field" />
             {fieldErrors.author ? <p className="error-text">{fieldErrors.author}</p> : null}
           </div>
           <div>
@@ -180,6 +195,16 @@ function BooksPageInner() {
             <label className="label" htmlFor="totalPages">Total pages</label>
             <input id="totalPages" name="totalPages" className="field" type="number" min={1} />
             {fieldErrors.totalPages ? <p className="error-text">{fieldErrors.totalPages}</p> : null}
+          </div>
+          <div>
+            <label className="label" htmlFor="rating">Rating (1–5, optional)</label>
+            <input id="rating" name="rating" className="field" type="number" min={1} max={5} />
+            {fieldErrors.rating ? <p className="error-text">{fieldErrors.rating}</p> : null}
+          </div>
+          <div className="md:col-span-2">
+            <label className="label" htmlFor="notes">Notes (optional)</label>
+            <textarea id="notes" name="notes" className="field min-h-20" />
+            {fieldErrors.notes ? <p className="error-text">{fieldErrors.notes}</p> : null}
           </div>
           {formError ? <p className="error-text md:col-span-2">{formError}</p> : null}
           <button className="btn md:col-span-2" disabled={pending}>
@@ -239,7 +264,14 @@ function BooksPageInner() {
                     <p className="font-semibold">{book.title}</p>
                     <p className="text-sm text-[var(--ink-muted)]">{book.author}</p>
                   </div>
-                  <StatusBadge status={book.status as BookStatus} />
+                  <div className="flex items-center gap-2">
+                    {book.rating != null ? (
+                      <span className="text-sm text-amber-500" aria-label={`${book.rating} out of 5 stars`}>
+                        {'★'.repeat(book.rating)}{'☆'.repeat(5 - book.rating)}
+                      </span>
+                    ) : null}
+                    <StatusBadge status={book.status as BookStatus} />
+                  </div>
                 </div>
                 <div className="mt-3">
                   <ProgressBar value={book.progressPercentage} />
