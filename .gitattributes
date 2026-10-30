@@ -1,0 +1,5 @@
+# Auto-normalise line endings
+* text=auto
+
+# Shell scripts must always be LF (Alpine / Linux Docker)
+*.sh text eol=lf

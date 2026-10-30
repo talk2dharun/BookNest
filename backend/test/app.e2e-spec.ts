@@ -16,8 +16,13 @@ describe('AppController (e2e)', () => {
     await app.init();
   });
 
-  it('/ (GET) is protected', () => {
-    return request(app.getHttpServer()).get('/').expect(401);
+  it('/ (GET) points at health and docs', () => {
+    return request(app.getHttpServer())
+      .get('/')
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.health).toBe('/health');
+      });
   });
 
   afterEach(async () => {

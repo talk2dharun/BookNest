@@ -1,0 +1,179 @@
+@base = http://localhost:4000
+@access = {{login.response.body.accessToken}}
+@shelfId = {{createShelf.response.body.id}}
+@bookId = {{createBook.response.body.id}}
+
+### Health
+GET {{base}}/health
+
+### Signup (owner)
+POST {{base}}/auth/signup
+Content-Type: application/json
+
+{
+  "name": "Ada",
+  "email": "ada-http@example.com",
+  "password": "Password123"
+}
+
+### Signup (editor)
+POST {{base}}/auth/signup
+Content-Type: application/json
+
+{
+  "name": "Beau",
+  "email": "beau-http@example.com",
+  "password": "Password123"
+}
+
+### Signup (viewer)
+POST {{base}}/auth/signup
+Content-Type: application/json
+
+{
+  "name": "Cara",
+  "email": "cara-http@example.com",
+  "password": "Password123"
+}
+
+### Login as Ada
+# @name login
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "ada-http@example.com",
+  "password": "Password123"
+}
+
+### Refresh (sends httpOnly cookie; path is /auth)
+POST {{base}}/auth/refresh
+
+### Me
+GET {{base}}/auth/me
+Authorization: Bearer {{access}}
+
+### Create a book
+# @name createBook
+POST {{base}}/books
+Authorization: Bearer {{access}}
+Content-Type: application/json
+
+{
+  "title": "The Hobbit",
+  "author": "J.R.R. Tolkien",
+  "status": "READING",
+  "totalPages": 310
+}
+
+### List books (filter + search + sort + pagination)
+GET {{base}}/books?status=READING&search=hobbit&sort=title&order=asc&page=1&limit=10
+Authorization: Bearer {{access}}
+
+### Log progress (auto-finish at 310)
+PATCH {{base}}/books/{{bookId}}/progress
+Authorization: Bearer {{access}}
+Content-Type: application/json
+
+{
+  "currentPage": 310
+}
+
+### Progress error: page too high
+PATCH {{base}}/books/{{bookId}}/progress
+Authorization: Bearer {{access}}
+Content-Type: application/json
+
+{
+  "currentPage": 9999
+}
+
+### Create shelf
+# @name createShelf
+POST {{base}}/shelves
+Authorization: Bearer {{access}}
+Content-Type: application/json
+
+{
+  "name": "Club"
+}
+
+### Add book to shelf
+POST {{base}}/shelves/{{shelfId}}/books
+Authorization: Bearer {{access}}
+Content-Type: application/json
+
+{
+  "bookId": "{{bookId}}"
+}
+
+### Share with editor
+POST {{base}}/shelves/{{shelfId}}/shares
+Authorization: Bearer {{access}}
+Content-Type: application/json
+
+{
+  "email": "beau-http@example.com",
+  "role": "EDITOR"
+}
+
+### Share with viewer
+POST {{base}}/shelves/{{shelfId}}/shares
+Authorization: Bearer {{access}}
+Content-Type: application/json
+
+{
+  "email": "cara-http@example.com",
+  "role": "VIEWER"
+}
+
+### Login as Cara (viewer)
+# @name viewerLogin
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "cara-http@example.com",
+  "password": "Password123"
+}
+
+### Viewer tries to add a book (should be 403)
+POST {{base}}/shelves/{{shelfId}}/books
+Authorization: Bearer {{viewerLogin.response.body.accessToken}}
+Content-Type: application/json
+
+{
+  "bookId": "{{bookId}}"
+}
+
+### Viewer tries to delete the shelf (should be 403)
+DELETE {{base}}/shelves/{{shelfId}}
+Authorization: Bearer {{viewerLogin.response.body.accessToken}}
+
+### Lend a book
+POST {{base}}/books/{{bookId}}/lend
+Authorization: Bearer {{access}}
+Content-Type: application/json
+
+{
+  "email": "beau-http@example.com"
+}
+
+### Borrowed list (as Beau after lending)
+GET {{base}}/books/borrowed
+Authorization: Bearer {{access}}
+
+### Return
+POST {{base}}/books/{{bookId}}/return
+Authorization: Bearer {{access}}
+
+### Activity
+GET {{base}}/activity
+Authorization: Bearer {{access}}
+
+### Dashboard
+GET {{base}}/dashboard
+Authorization: Bearer {{access}}
+
+### Logout
+POST {{base}}/auth/logout
