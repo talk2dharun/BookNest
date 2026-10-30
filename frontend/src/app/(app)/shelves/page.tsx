@@ -13,6 +13,7 @@ export default function ShelvesPage() {
   const queryClient = useQueryClient();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
+  const [nameError, setNameError] = useState('');
 
   const query = useQuery({
     queryKey: ['shelves'],
@@ -23,8 +24,15 @@ export default function ShelvesPage() {
   async function onCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
-    const name = String(new FormData(form).get('name') ?? '');
+    const name = String(new FormData(form).get('name') ?? '').trim();
     setError('');
+    setNameError('');
+
+    if (!name) {
+      setNameError('Shelf name is required');
+      return;
+    }
+
     setPending(true);
     try {
       await api('/shelves', { method: 'POST', json: { name } });
@@ -52,11 +60,16 @@ export default function ShelvesPage() {
   return (
     <div className="space-y-6">
       <h1 className="font-serif text-3xl">Shelves</h1>
-      <form onSubmit={onCreate} className="flex flex-wrap gap-3 rounded-2xl bg-white p-4 shadow-sm">
-        <input name="name" className="field max-w-xs" placeholder="New shelf name" required />
-        <button className="btn" disabled={pending}>
-          {pending ? 'Creating...' : 'Create shelf'}
-        </button>
+      <form onSubmit={onCreate} noValidate className="flex flex-wrap gap-3 rounded-2xl bg-white p-4 shadow-sm">
+        <div className="flex flex-wrap items-start gap-3">
+          <div>
+            <input name="name" className="field max-w-xs" placeholder="New shelf name" />
+            {nameError ? <p className="error-text">{nameError}</p> : null}
+          </div>
+          <button className="btn" disabled={pending}>
+            {pending ? 'Creating...' : 'Create shelf'}
+          </button>
+        </div>
         {error ? <p className="error-text w-full">{error}</p> : null}
       </form>
       {!query.data || query.data.items.length === 0 ? (

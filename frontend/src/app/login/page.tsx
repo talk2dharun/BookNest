@@ -12,11 +12,23 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [pending, setPending] = useState(false);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     setError('');
+    setFieldErrors({});
+
+    // Inline validation
+    const next: Record<string, string> = {};
+    if (!email.trim()) next.email = 'Email is required';
+    if (!password) next.password = 'Password is required';
+    if (Object.keys(next).length > 0) {
+      setFieldErrors(next);
+      return;
+    }
+
     setPending(true);
     try {
       await login(email, password);
@@ -32,7 +44,7 @@ export default function LoginPage() {
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4">
       <h1 className="font-serif text-3xl">BookNest</h1>
       <p className="mt-1 text-[var(--ink-muted)]">Log in to your library</p>
-      <form onSubmit={onSubmit} className="mt-8 space-y-4 rounded-2xl bg-white p-6 shadow-sm">
+      <form onSubmit={onSubmit} noValidate className="mt-8 space-y-4 rounded-2xl bg-white p-6 shadow-sm">
         <div>
           <label className="label" htmlFor="email">Email</label>
           <input
@@ -41,8 +53,8 @@ export default function LoginPage() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            required
           />
+          {fieldErrors.email ? <p className="error-text">{fieldErrors.email}</p> : null}
         </div>
         <div>
           <label className="label" htmlFor="password">Password</label>
@@ -52,8 +64,8 @@ export default function LoginPage() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            required
           />
+          {fieldErrors.password ? <p className="error-text">{fieldErrors.password}</p> : null}
         </div>
         {error ? <p className="error-text">{error}</p> : null}
         <button className="btn w-full" disabled={pending}>

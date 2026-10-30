@@ -20,6 +20,7 @@ export default function ShelfDetailPage() {
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [pending, setPending] = useState<string | null>(null);
+  const [renameNameError, setRenameNameError] = useState('');
 
   const query = useQuery({
     queryKey: ['shelf', id],
@@ -96,15 +97,24 @@ export default function ShelfDetailPage() {
       {isOwner ? (
         <form
           className="flex flex-wrap gap-3 rounded-2xl bg-white p-4 shadow-sm"
+          noValidate
           onSubmit={(event: FormEvent<HTMLFormElement>) => {
             event.preventDefault();
-            const name = String(new FormData(event.currentTarget).get('name') ?? '');
+            const name = String(new FormData(event.currentTarget).get('name') ?? '').trim();
+            setRenameNameError('');
+            if (!name) {
+              setRenameNameError('Shelf name is required');
+              return;
+            }
             void run('rename', async () => {
               await api(`/shelves/${id}`, { method: 'PATCH', json: { name } });
             });
           }}
         >
-          <input name="name" className="field max-w-xs" defaultValue={shelf.name} />
+          <div>
+            <input name="name" className="field max-w-xs" defaultValue={shelf.name} />
+            {renameNameError ? <p className="error-text">{renameNameError}</p> : null}
+          </div>
           <button className="btn-secondary" disabled={pending !== null}>
             {pending === 'rename' ? 'Saving...' : 'Rename'}
           </button>
@@ -114,22 +124,30 @@ export default function ShelfDetailPage() {
       {canEdit ? (
         <form
           className="flex flex-wrap gap-3 rounded-2xl bg-white p-4 shadow-sm"
+          noValidate
           onSubmit={(event: FormEvent<HTMLFormElement>) => {
             event.preventDefault();
             const bookId = String(new FormData(event.currentTarget).get('bookId') ?? '');
+            if (!bookId) {
+              setFieldErrors((prev) => ({ ...prev, bookId: 'Please choose a book' }));
+              return;
+            }
             void run('add', async () => {
               await api(`/shelves/${id}/books`, { method: 'POST', json: { bookId } });
             });
           }}
         >
-          <select name="bookId" className="field max-w-sm" required>
-            <option value="">Add one of your books</option>
-            {(myBooks.data?.items ?? []).map((book) => (
-              <option key={book.id} value={book.id}>
-                {book.title}
-              </option>
-            ))}
-          </select>
+          <div>
+            <select name="bookId" className="field max-w-sm">
+              <option value="">Add one of your books</option>
+              {(myBooks.data?.items ?? []).map((book) => (
+                <option key={book.id} value={book.id}>
+                  {book.title}
+                </option>
+              ))}
+            </select>
+            {fieldErrors.bookId ? <p className="error-text">{fieldErrors.bookId}</p> : null}
+          </div>
           <button className="btn" disabled={pending !== null}>
             {pending === 'add' ? 'Adding...' : 'Add book'}
           </button>
@@ -175,21 +193,30 @@ export default function ShelfDetailPage() {
           <h2 className="font-semibold">Collaborators</h2>
           <form
             className="flex flex-wrap gap-3"
+            noValidate
             onSubmit={(event: FormEvent<HTMLFormElement>) => {
               event.preventDefault();
               const form = new FormData(event.currentTarget);
+              const email = String(form.get('email') ?? '').trim();
+              if (!email) {
+                setFieldErrors((prev) => ({ ...prev, email: 'Email is required' }));
+                return;
+              }
               void run('share', async () => {
                 await api(`/shelves/${id}/shares`, {
                   method: 'POST',
                   json: {
-                    email: String(form.get('email') ?? ''),
+                    email,
                     role: String(form.get('role') ?? 'VIEWER'),
                   },
                 });
               });
             }}
           >
-            <input name="email" type="email" className="field max-w-xs" placeholder="user@example.com" required />
+            <div>
+              <input name="email" type="email" className="field max-w-xs" placeholder="user@example.com" />
+              {fieldErrors.email ? <p className="error-text">{fieldErrors.email}</p> : null}
+            </div>
             <select name="role" className="field max-w-[8rem]">
               <option value="EDITOR">Editor</option>
               <option value="VIEWER">Viewer</option>
@@ -198,7 +225,6 @@ export default function ShelfDetailPage() {
               {pending === 'share' ? 'Sharing...' : 'Share'}
             </button>
           </form>
-          {fieldErrors.email ? <p className="error-text">{fieldErrors.email}</p> : null}
           {shelf.collaborators.length === 0 ? (
             <p className="text-sm text-[var(--ink-muted)]">No collaborators yet.</p>
           ) : (

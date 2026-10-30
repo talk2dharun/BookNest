@@ -20,6 +20,17 @@ export default function SignupPage() {
     event.preventDefault();
     setError('');
     setFieldErrors({});
+
+    // Inline validation
+    const next: Record<string, string> = {};
+    if (!name.trim()) next.name = 'Name is required';
+    if (!email.trim()) next.email = 'Email is required';
+    if (!password) next.password = 'Password is required';
+    if (Object.keys(next).length > 0) {
+      setFieldErrors(next);
+      return;
+    }
+
     setPending(true);
     try {
       await signup(name, email, password);
@@ -27,14 +38,14 @@ export default function SignupPage() {
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
-        const next: Record<string, string> = {};
+        const fe: Record<string, string> = {};
         for (const field of ['name', 'email', 'password']) {
           const message = err.fieldMessage(field);
           if (message) {
-            next[field] = message;
+            fe[field] = message;
           }
         }
-        setFieldErrors(next);
+        setFieldErrors(fe);
       } else {
         setError('Could not create the account');
       }
@@ -46,20 +57,20 @@ export default function SignupPage() {
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4">
       <h1 className="font-serif text-3xl">Create an account</h1>
-      <form onSubmit={onSubmit} className="mt-8 space-y-4 rounded-2xl bg-white p-6 shadow-sm">
+      <form onSubmit={onSubmit} noValidate className="mt-8 space-y-4 rounded-2xl bg-white p-6 shadow-sm">
         <div>
           <label className="label" htmlFor="name">Name</label>
-          <input id="name" className="field" value={name} onChange={(e) => setName(e.target.value)} required />
+          <input id="name" className="field" value={name} onChange={(e) => setName(e.target.value)} />
           {fieldErrors.name ? <p className="error-text">{fieldErrors.name}</p> : null}
         </div>
         <div>
           <label className="label" htmlFor="email">Email</label>
-          <input id="email" className="field" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <input id="email" className="field" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
           {fieldErrors.email ? <p className="error-text">{fieldErrors.email}</p> : null}
         </div>
         <div>
           <label className="label" htmlFor="password">Password</label>
-          <input id="password" className="field" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <input id="password" className="field" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
           {fieldErrors.password ? <p className="error-text">{fieldErrors.password}</p> : null}
           <p className="mt-1 text-xs text-[var(--ink-muted)]">
             At least 8 characters, with one uppercase letter, one lowercase letter, and one number.
