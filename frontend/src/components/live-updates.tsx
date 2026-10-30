@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
 import { API_URL } from '@/lib/config';
-import { getAccessToken } from '@/lib/api';
+import { getAccessToken, refreshSession } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 
 export function LiveUpdates() {
@@ -41,9 +41,23 @@ export function LiveUpdates() {
       refetchView();
     });
     socket.on('disconnect', () => setDisconnected(true));
-    socket.io.on('reconnect_attempt', () => {
-      socket.auth = { token: getAccessToken() };
+    socket.io.on('reconnect_attempt', async () => {
+      let currentToken = getAccessToken();
+      if (!currentToken) {
+        const session = await refreshSession();
+        currentToken = session?.accessToken ?? null;
+      }
+      socket.auth = { token: currentToken };
       setDisconnected(true);
+    });
+    socket.on('connect_error', async (err) => {
+      if (err.message === 'Unauthorized') {
+        const session = await refreshSession();
+        if (session?.accessToken) {
+          socket.auth = { token: session.accessToken };
+          socket.connect();
+        }
+      }
     });
 
     socket.on('lending:created', refetchView);
