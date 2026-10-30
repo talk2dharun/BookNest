@@ -174,22 +174,40 @@ The partial unique index is not expressible in Prisma schema, so it lives in SQL
 
 ## Requirement map (1–32)
 
-| # | Requirement | Where |
-|---|-------------|--------|
-| 1 | Sign up | `POST /auth/signup`, `backend/src/auth` |
-| 2 | Password hash, never returned | `auth.service.ts` bcrypt cost 12 |
-| 3 | Access + refresh tokens | `auth.service.ts`, httpOnly cookie |
-| 4 | Refresh rotation + reuse revocation | `AuthService.refresh` |
-| 5 | Logout, guard, ownership | `POST /auth/logout`, `jwt-auth.guard.ts` |
-| 6–8 | Book CRUD + validation | `books.controller.ts`, DTOs |
-| 9 | Filter, search, sort, pagination | `BooksService.findMany` |
-| 10–12 | Shelves + many-to-many | `shelves.controller.ts` |
-| 13–16 | Share, roles, shared-with-me | `shelf-access.service.ts`, `GET /shelves/shared-with-me` |
-| 17–19 | Progress + auto-finish | `PATCH /books/:id/progress` |
-| 20–24 | Lending rules + borrowed list | `lending.service.ts`, `GET /books/borrowed` |
-| 25 | Activity feed | `GET /activity` |
-| 26–31 | Authenticated Socket.io rooms | `realtime.gateway.ts`, `live-updates.tsx` |
-| 32 | Dashboard aggregates | `GET /dashboard` |
+| # | Requirement | Implementation / Location | Tested In |
+|---|-------------|---------------------------|-----------|
+| 1 | Sign up (name, email, password rules) | `POST /auth/signup` in [`auth.controller.ts`](file:///d:/Projects/BookNest/backend/src/auth/auth.controller.ts), [`signup.dto.ts`](file:///d:/Projects/BookNest/backend/src/auth/dto/signup.dto.ts) | `critical-path.e2e-spec.ts` |
+| 2 | bcrypt hash cost 12, never returned | [`auth.service.ts`](file:///d:/Projects/BookNest/backend/src/auth/auth.service.ts), `USER_SELECT` strips `passwordHash` | `critical-path.e2e-spec.ts` |
+| 3 | 15m access token + 7d httpOnly refresh cookie | `issueSession` in [`auth.service.ts`](file:///d:/Projects/BookNest/backend/src/auth/auth.service.ts), cookie path `/auth` | `critical-path.e2e-spec.ts` |
+| 4 | Refresh rotation, reuse revokes all sessions | `refresh` in [`auth.service.ts`](file:///d:/Projects/BookNest/backend/src/auth/auth.service.ts), `RefreshToken.revokedAt` | `critical-path.e2e-spec.ts` |
+| 5 | Logout, global JWT guard, rate-limiting, 401 retry | [`jwt-auth.guard.ts`](file:///d:/Projects/BookNest/backend/src/common/guards/jwt-auth.guard.ts), `ThrottlerGuard`, [`api.ts`](file:///d:/Projects/BookNest/frontend/src/lib/api.ts) retry queue | `critical-path.e2e-spec.ts` |
+| 6 | Book create with class-validator validation | `POST /books` in [`books.controller.ts`](file:///d:/Projects/BookNest/backend/src/books/books.controller.ts), [`create-book.dto.ts`](file:///d:/Projects/BookNest/backend/src/books/dto/create-book.dto.ts) | `critical-path.e2e-spec.ts` |
+| 7 | Owner-scoped CRUD, other users' books return 404 | [`books.service.ts`](file:///d:/Projects/BookNest/backend/src/books/books.service.ts) (`requireOwnedBook`, `findOne`) | `critical-path.e2e-spec.ts` |
+| 8 | Book update & delete with clean cascade | `PATCH /books/:id`, `DELETE /books/:id` in [`books.controller.ts`](file:///d:/Projects/BookNest/backend/src/books/books.controller.ts) | `critical-path.e2e-spec.ts` |
+| 9 | Filter, search, sort (nulls last), pagination | `findMany` in [`books.service.ts`](file:///d:/Projects/BookNest/backend/src/books/books.service.ts), stable id tiebreaker | `books.controller.ts` |
+| 10 | Shelves CRUD (create, rename, list, delete) | [`shelves.controller.ts`](file:///d:/Projects/BookNest/backend/src/shelves/shelves.controller.ts), [`shelves.service.ts`](file:///d:/Projects/BookNest/backend/src/shelves/shelves.service.ts) | `critical-path.e2e-spec.ts` |
+| 11 | Many-to-many books on shelves (`ShelfBook`) | `POST /shelves/:id/books`, `DELETE /shelves/:id/books/:bookId` | `critical-path.e2e-spec.ts` |
+| 12 | Shelf detail for owner and collaborators | `GET /shelves/:id` with collaborator role & member list | `critical-path.e2e-spec.ts` |
+| 13 | Share shelf by email (EDITOR / VIEWER) | `POST /shelves/:id/shares` in [`shelves.service.ts`](file:///d:/Projects/BookNest/backend/src/shelves/shelves.service.ts) | `critical-path.e2e-spec.ts` |
+| 14 | EDITOR adds own books / removes any; VIEWER 403 | [`shelf-access.service.ts`](file:///d:/Projects/BookNest/backend/src/shelves/shelf-access.service.ts) (`requireRole`) | `critical-path.e2e-spec.ts` |
+| 15 | Only OWNER can share, change role, rename, delete | [`shelves.service.ts`](file:///d:/Projects/BookNest/backend/src/shelves/shelves.service.ts) requires `AccessRole.OWNER` | `critical-path.e2e-spec.ts` |
+| 16 | Shared-with-me list & shelf activity records | `GET /shelves/shared-with-me`, activities `SHELF_SHARED`, `ROLE_CHANGED`, etc. | `critical-path.e2e-spec.ts` |
+| 17 | Owner-only reading progress, status must be READING | `PATCH /books/:id/progress` in [`books.service.ts`](file:///d:/Projects/BookNest/backend/src/books/books.service.ts) | `critical-path.e2e-spec.ts` |
+| 18 | Progress validation (page > total, negatives, non-ints) | `fieldBadRequest` in [`books.service.ts`](file:///d:/Projects/BookNest/backend/src/books/books.service.ts) returns 400 details | `critical-path.e2e-spec.ts` |
+| 19 | Auto-finish on totalPages, finishedAt, STATUS_CHANGED | `logProgress` in [`books.service.ts`](file:///d:/Projects/BookNest/backend/src/books/books.service.ts), `progressPercentage` | `critical-path.e2e-spec.ts` |
+| 20 | Lend by email (`POST /books/:id/lend`), reject self/unknown | [`lending.service.ts`](file:///d:/Projects/BookNest/backend/src/lending/lending.service.ts) (self 400, unknown email 404) | `critical-path.e2e-spec.ts` |
+| 21 | Already lent 409 via transaction + partial unique index | `Lending_bookId_active_key` (`WHERE "returnedAt" IS NULL`) | `critical-path.e2e-spec.ts` |
+| 22 | Borrowed-from-others list (`GET /books/borrowed`) | `listBorrowed` in [`lending.service.ts`](file:///d:/Projects/BookNest/backend/src/lending/lending.service.ts), read-only for borrower | `critical-path.e2e-spec.ts` |
+| 23 | Owner marks returned (`POST /books/:id/return`) | `returnBook` in [`lending.service.ts`](file:///d:/Projects/BookNest/backend/src/lending/lending.service.ts), `lentTo` on book response | `critical-path.e2e-spec.ts` |
+| 24 | Owner can delete lent book; cascades cleanly | `Book.lendings` cascade on delete; borrower notified via socket | `critical-path.e2e-spec.ts` |
+| 25 | Activity feed (`GET /activity` latest 20) | [`activity.controller.ts`](file:///d:/Projects/BookNest/backend/src/activity/activity.controller.ts) via `ActivityRecipient` | `api.http`, seed verification |
+| 26 | WebSockets auth at handshake with access token | `use` middleware in [`realtime.gateway.ts`](file:///d:/Projects/BookNest/backend/src/realtime/realtime.gateway.ts) verifies JWT | `live-updates.tsx` |
+| 27 | Scoped rooms `user:{id}` and `shelf:{id}` | `handleConnection` in [`realtime.gateway.ts`](file:///d:/Projects/BookNest/backend/src/realtime/realtime.gateway.ts) | `realtime.service.ts` |
+| 28 | Server-managed rooms (clients cannot pick rooms) | Rooms joined exclusively by server in [`realtime.service.ts`](file:///d:/Projects/BookNest/backend/src/realtime/realtime.service.ts) | `realtime.service.ts` |
+| 29 | Realtime events emitted to user/shelf rooms | `lending:created/returned`, `shelf:book-added/removed`, `shelf:shared`, etc. | [`realtime.service.ts`](file:///d:/Projects/BookNest/backend/src/realtime/realtime.service.ts) |
+| 30 | Frontend query invalidation on socket events | [`live-updates.tsx`](file:///d:/Projects/BookNest/frontend/src/components/live-updates.tsx) invalidates TanStack queries | `live-updates.tsx` |
+| 31 | Reconnect banner, token refresh before reconnect | Reconnecting banner in [`live-updates.tsx`](file:///d:/Projects/BookNest/frontend/src/components/live-updates.tsx), fallback to HTTP | `live-updates.tsx` |
+| 32 | Dashboard aggregates (counts, finished this year, rating, shelves) | `GET /dashboard` in [`dashboard.service.ts`](file:///d:/Projects/BookNest/backend/src/dashboard/dashboard.service.ts) | `dashboard.controller.ts` |
 
 ## Where I used AI and what I learned
 
