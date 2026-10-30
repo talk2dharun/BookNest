@@ -73,7 +73,7 @@ function BooksPageInner() {
   listQuery.set('sort', sort);
   listQuery.set('order', order);
   listQuery.set('page', page);
-  listQuery.set('limit', '10');
+  listQuery.set('limit', '5');
 
   const query = useQuery({
     queryKey: ['books', listQuery.toString()],
@@ -210,9 +210,9 @@ function BooksPageInner() {
           value={sort}
           onChange={(e) => replaceParams({ sort: e.target.value, page: '1' })}
         >
-          <option value="createdAt">Created</option>
           <option value="title">Title</option>
           <option value="rating">Rating</option>
+          <option value="createdAt">Date added</option>
         </select>
         <select
           className="field max-w-[10rem]"

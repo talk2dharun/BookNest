@@ -46,6 +46,13 @@ export default function DashboardPage() {
       label: 'Average rating',
       value: data.averageRating == null ? '—' : data.averageRating.toFixed(1),
     },
+    {
+      label: 'Shelf with most books',
+      value: data.topShelf
+        ? `${data.topShelf.name} (${data.topShelf.bookCount} books)`
+        : '—',
+      href: data.topShelf ? `/shelves/${data.topShelf.id}` : undefined,
+    },
     { label: 'Lent out', value: data.lentOutCount },
     { label: 'Shared with me', value: data.sharedWithMeCount },
   ];
@@ -57,21 +64,26 @@ export default function DashboardPage() {
         <p className="text-[var(--ink-muted)]">Your reading at a glance</p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {cards.map((card) => (
-          <div key={card.label} className="rounded-2xl bg-white p-4 shadow-sm">
-            <p className="text-sm text-[var(--ink-muted)]">{card.label}</p>
-            <p className="mt-2 text-2xl font-semibold">{card.value}</p>
-          </div>
-        ))}
+        {cards.map((card) => {
+          const inner = (
+            <div
+              className={`h-full rounded-2xl bg-white p-4 shadow-sm ${
+                card.href ? 'transition hover:shadow-md' : ''
+              }`}
+            >
+              <p className="text-sm text-[var(--ink-muted)]">{card.label}</p>
+              <p className="mt-2 text-2xl font-semibold">{card.value}</p>
+            </div>
+          );
+          return card.href ? (
+            <Link key={card.label} href={card.href} className="block">
+              {inner}
+            </Link>
+          ) : (
+            <div key={card.label}>{inner}</div>
+          );
+        })}
       </div>
-      {data.topShelf ? (
-        <Link
-          href={`/shelves/${data.topShelf.id}`}
-          className="block rounded-2xl bg-white p-4 shadow-sm"
-        >
-          Largest shelf: <strong>{data.topShelf.name}</strong> ({data.topShelf.bookCount} books)
-        </Link>
-      ) : null}
       <section>
         <h2 className="mb-3 text-lg font-semibold">Recent activity</h2>
         {data.recentActivity.length === 0 ? (
