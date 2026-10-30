@@ -13,6 +13,21 @@ export type RecordActivityInput = {
   recipientIds: string[];
 };
 
+const FEED_SELECT = {
+  activity: {
+    select: {
+      id: true,
+      type: true,
+      message: true,
+      bookId: true,
+      shelfId: true,
+      targetUserId: true,
+      createdAt: true,
+      actor: { select: { id: true, name: true } },
+    },
+  },
+} as const;
+
 @Injectable()
 export class ActivityService {
   constructor(private readonly prisma: PrismaService) {}
@@ -32,5 +47,15 @@ export class ActivityService {
         },
       },
     });
+  }
+
+  async listForUser(userId: string, take = 20) {
+    const rows = await this.prisma.activityRecipient.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take,
+      select: FEED_SELECT,
+    });
+    return { items: rows.map((row) => row.activity) };
   }
 }
