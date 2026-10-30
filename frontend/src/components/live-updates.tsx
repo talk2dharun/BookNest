@@ -67,7 +67,13 @@ export function LiveUpdates() {
     socket.on('shelf:shared', refetchView);
     socket.on('shelf:role-changed', refetchView);
     socket.on('shelf:access-removed', refetchView);
-    socket.on('activity:new', refetchView);
+
+    // On any new activity (including ROLE_CHANGED, COLLABORATOR_REMOVED) refresh
+    // the dashboard feed so it shows the latest entries immediately.
+    socket.on('activity:new', () => {
+      void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    });
+
 
     return () => {
       socket.removeAllListeners();

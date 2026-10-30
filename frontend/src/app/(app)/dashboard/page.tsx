@@ -7,6 +7,16 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import type { Dashboard } from '@/lib/types';
 
+const ACTIVITY_LABELS: Record<string, string> = {
+  BOOK_ADDED: 'Book added',
+  STATUS_CHANGED: 'Status changed',
+  BOOK_LENT: 'Book lent',
+  BOOK_RETURNED: 'Book returned',
+  SHELF_SHARED: 'Shelf shared',
+  ROLE_CHANGED: 'Role changed',
+  COLLABORATOR_REMOVED: 'Collaborator removed',
+};
+
 export default function DashboardPage() {
   const { ready, user } = useAuth();
   const query = useQuery({
@@ -92,8 +102,13 @@ export default function DashboardPage() {
           <ul className="space-y-2">
             {data.recentActivity.map((item) => (
               <li key={item.id} className="rounded-xl bg-white px-4 py-3 shadow-sm">
-                <p>{item.message}</p>
-                <p className="text-xs text-[var(--ink-muted)]">
+                <div className="flex items-start justify-between gap-2">
+                  <p>{item.message}</p>
+                  <span className="shrink-0 rounded-full bg-[var(--muted)] px-2 py-0.5 text-xs font-medium text-[var(--ink-muted)]">
+                    {ACTIVITY_LABELS[item.type] ?? item.type}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-[var(--ink-muted)]">
                   {item.actor.name} · {new Date(item.createdAt).toLocaleString()}
                 </p>
               </li>
