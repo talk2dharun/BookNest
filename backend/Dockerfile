@@ -11,6 +11,7 @@ RUN npm ci
 
 COPY src ./src
 COPY test ./test
+ENV DATABASE_URL=postgresql://booknest:booknest@db:5432/booknest
 RUN npm run build
 
 COPY docker-entrypoint.sh ./
