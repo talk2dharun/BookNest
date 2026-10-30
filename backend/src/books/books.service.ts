@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -9,15 +10,19 @@ import {
   Prisma,
 } from '../generated/prisma/client.js';
 import { ActivityService } from '../activity/activity.service.js';
+import { fieldBadRequest } from '../common/http-errors.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { RealtimeService } from '../realtime/realtime.service.js';
+import { toBookResponse } from './book.util.js';
 import type { CreateBookDto } from './dto/create-book.dto.js';
 import type {
   BookSortField,
   ListBooksQueryDto,
 } from './dto/list-books-query.dto.js';
 import type { UpdateBookDto } from './dto/update-book.dto.js';
+import type { UpdateProgressDto } from './dto/update-progress.dto.js';
 
-const BOOK_SELECT = {
+export const BOOK_SELECT = {
   id: true,
   ownerId: true,
   title: true,
@@ -30,6 +35,17 @@ const BOOK_SELECT = {
   finishedAt: true,
   createdAt: true,
   updatedAt: true,
+  owner: { select: { id: true, name: true } },
+  lendings: {
+    where: { returnedAt: null },
+    take: 1,
+    select: {
+      id: true,
+      lentAt: true,
+      borrowerId: true,
+      borrower: { select: { id: true, name: true, email: true } },
+    },
+  },
 } as const;
 
 @Injectable()
@@ -37,11 +53,12 @@ export class BooksService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly activity: ActivityService,
+    private readonly realtime: RealtimeService,
   ) {}
 
   async create(ownerId: string, dto: CreateBookDto) {
-    return this.prisma.$transaction(async (tx) => {
-      const book = await tx.book.create({
+    const book = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.book.create({
         data: {
           ownerId,
           title: dto.title,
@@ -60,15 +77,21 @@ export class BooksService {
         {
           actorId: ownerId,
           type: ActivityType.BOOK_ADDED,
-          bookId: book.id,
-          message: `Added "${book.title}"`,
+          bookId: created.id,
+          message: `Added "${created.title}"`,
           recipientIds: [ownerId],
         },
         tx,
       );
 
-      return book;
+      return created;
     });
+
+    this.realtime.emitActivityNew([ownerId], {
+      type: ActivityType.BOOK_ADDED,
+      message: `Added "${book.title}"`,
+    });
+    return toBookResponse(book, ownerId);
   }
 
   async findMany(ownerId: string, query: ListBooksQueryDto) {
@@ -109,7 +132,7 @@ export class BooksService {
     ]);
 
     return {
-      items,
+      items: items.map((book) => toBookResponse(book, ownerId)),
       page,
       limit,
       total,
@@ -117,12 +140,28 @@ export class BooksService {
     };
   }
 
-  async findOne(ownerId: string, id: string) {
-    return this.requireOwnedBook(ownerId, id);
+  async findOne(userId: string, id: string) {
+    const book = await this.prisma.book.findUnique({
+      where: { id },
+      select: BOOK_SELECT,
+    });
+    if (!book) {
+      throw new NotFoundException('Book not found');
+    }
+    if (book.ownerId === userId) {
+      return toBookResponse(book, userId);
+    }
+    if (book.lendings[0]?.borrowerId === userId) {
+      return toBookResponse(book, userId);
+    }
+    if (await this.canViewViaShelf(userId, id)) {
+      return toBookResponse(book, userId);
+    }
+    throw new NotFoundException('Book not found');
   }
 
-  async update(ownerId: string, id: string, dto: UpdateBookDto) {
-    const existing = await this.requireOwnedBook(ownerId, id);
+  async update(userId: string, id: string, dto: UpdateBookDto) {
+    const existing = await this.requireWritableBook(userId, id);
 
     if (
       dto.totalPages !== undefined &&
@@ -132,7 +171,10 @@ export class BooksService {
       throw new BadRequestException({
         message: 'Validation failed',
         details: [
-          'totalPages cannot be less than the current page of this book',
+          {
+            field: 'totalPages',
+            message: 'totalPages cannot be less than the current page of this book',
+          },
         ],
       });
     }
@@ -148,8 +190,8 @@ export class BooksService {
       finishedAt = null;
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      const book = await tx.book.update({
+    const book = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.book.update({
         where: { id },
         data: {
           title: dto.title,
@@ -166,34 +208,131 @@ export class BooksService {
       if (dto.status && dto.status !== existing.status) {
         await this.activity.record(
           {
-            actorId: ownerId,
+            actorId: userId,
             type: ActivityType.STATUS_CHANGED,
-            bookId: book.id,
-            message: `Moved "${book.title}" from ${existing.status} to ${book.status}`,
-            recipientIds: [ownerId],
+            bookId: updated.id,
+            message: `Moved "${updated.title}" from ${existing.status} to ${updated.status}`,
+            recipientIds: [userId],
           },
           tx,
         );
       }
 
-      return book;
+      return updated;
     });
+
+    if (dto.status && dto.status !== existing.status) {
+      this.realtime.emitActivityNew([userId], {
+        type: ActivityType.STATUS_CHANGED,
+        message: `Moved "${book.title}" from ${existing.status} to ${book.status}`,
+      });
+    }
+
+    return toBookResponse(book, userId);
   }
 
-  async remove(ownerId: string, id: string) {
-    await this.requireOwnedBook(ownerId, id);
+  async logProgress(userId: string, id: string, dto: UpdateProgressDto) {
+    const existing = await this.requireWritableBook(userId, id);
+
+    if (existing.status !== BookStatus.READING) {
+      throw fieldBadRequest(
+        'status',
+        'Progress can only be logged when the book status is READING',
+      );
+    }
+    if (existing.totalPages == null) {
+      throw fieldBadRequest(
+        'totalPages',
+        'Set total pages before logging progress',
+      );
+    }
+    if (dto.currentPage > existing.totalPages) {
+      throw fieldBadRequest(
+        'currentPage',
+        'Page cannot exceed total pages',
+      );
+    }
+
+    const finished = dto.currentPage === existing.totalPages;
+    const previousStatus = existing.status;
+
+    const book = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.book.update({
+        where: { id },
+        data: {
+          currentPage: dto.currentPage,
+          ...(finished
+            ? { status: BookStatus.FINISHED, finishedAt: new Date() }
+            : {}),
+        },
+        select: BOOK_SELECT,
+      });
+
+      if (finished) {
+        await this.activity.record(
+          {
+            actorId: userId,
+            type: ActivityType.STATUS_CHANGED,
+            bookId: updated.id,
+            message: `Moved "${updated.title}" from ${previousStatus} to ${updated.status}`,
+            recipientIds: [userId],
+          },
+          tx,
+        );
+      }
+
+      return updated;
+    });
+
+    if (finished) {
+      this.realtime.emitActivityNew([userId], {
+        type: ActivityType.STATUS_CHANGED,
+        message: `Moved "${book.title}" from ${previousStatus} to ${book.status}`,
+      });
+    }
+
+    return toBookResponse(book, userId);
+  }
+
+  async remove(userId: string, id: string) {
+    const book = await this.requireWritableBook(userId, id);
+    const borrowerId = book.lendings[0]?.borrowerId;
     await this.prisma.book.delete({ where: { id } });
+    if (borrowerId) {
+      this.realtime.emitToUsers([borrowerId, userId], 'lending:returned', {
+        bookId: id,
+        deleted: true,
+      });
+    }
   }
 
-  private async requireOwnedBook(ownerId: string, id: string) {
-    const book = await this.prisma.book.findFirst({
-      where: { id, ownerId },
+  private async canViewViaShelf(userId: string, bookId: string) {
+    const link = await this.prisma.shelfBook.findFirst({
+      where: {
+        bookId,
+        shelf: {
+          OR: [{ ownerId: userId }, { shares: { some: { userId } } }],
+        },
+      },
+      select: { bookId: true },
+    });
+    return Boolean(link);
+  }
+
+  private async requireWritableBook(userId: string, id: string) {
+    const book = await this.prisma.book.findUnique({
+      where: { id },
       select: BOOK_SELECT,
     });
-    // Same 404 whether the book is missing or belongs to someone else.
     if (!book) {
       throw new NotFoundException('Book not found');
     }
-    return book;
+    if (book.ownerId === userId) {
+      return book;
+    }
+    if (book.lendings[0]?.borrowerId === userId) {
+      throw new ForbiddenException('Borrowed books are read-only');
+    }
+    throw new NotFoundException('Book not found');
   }
 }
