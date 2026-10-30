@@ -26,9 +26,8 @@ The app also works with any PostgreSQL instance if `DATABASE_URL` points at it.
 ## Test credentials (after seed)
 
 ```
-alice@example.com / Password123
-bob@example.com   / Password123
-carol@example.com / Password123
+alice@test.com / Password@123
+bob@test.com   / Password@123
 ```
 
 Password rule for new accounts: at least 8 characters, one uppercase letter, one lowercase letter, and one number.
@@ -165,12 +164,17 @@ If the socket drops, a banner says `Live updates disconnected, reconnecting...`.
 
 The partial unique index is not expressible in Prisma schema, so it lives in SQL. Refresh rotation plus theft detection needs careful cookie path and hash storage. Shelf access has to distinguish 404 from 403 without leaking existence. Progress validation must stay 400 with field messages, never 500. Socket rooms must be server-assigned so a viewer cannot subscribe to another user's feed.
 
-## Known issues / with more time
+## Known issues
 
-- Compose JWT secrets are placeholders for local Docker, not per-machine generated values.
-- There is no email invite for unregistered users; share requires an existing account.
-- Automated tests cover HTTP critical paths, not the Socket.io handshake itself.
-- The UI is functional and consistent, not a polished design system.
+- Compose JWT secrets are development placeholders; generate your own random secrets for production deployments.
+- No email invitations for unregistered users; shelf sharing and book lending require an existing registered user account.
+
+## What I'd improve
+
+- Add an automated E2E test for the Socket.io WebSocket handshake and live event reception in the CI test runner.
+- Introduce email invitations for unregistered collaborators.
+- Provide book cover art uploads or integration with an open book metadata API (e.g. Open Library).
+- Add full end-to-end browser tests using Playwright.
 
 ## Requirement map (1–32)
 
@@ -210,8 +214,22 @@ The partial unique index is not expressible in Prisma schema, so it lives in SQL
 | 32 | Dashboard aggregates (counts, finished this year, rating, shelves) | `GET /dashboard` in [`dashboard.service.ts`](file:///d:/Projects/BookNest/backend/src/dashboard/dashboard.service.ts) | `dashboard.controller.ts` |
 
 ## Where I used AI and what I learned
+<!-- Blank template for candidate to fill in honestly before the interview -->
 
-_Fill this in honestly before the interview. Suggested prompts: which phases the assistant wrote, what you changed by hand, what you can explain without looking, and one bug you had to fix yourself._
+### Which parts AI helped with
+- 
+
+### What I wrote / refactored by hand
+- 
+
+### What I can explain without looking
+- 
+
+### A tricky bug or obstacle I diagnosed and resolved myself
+- 
+
+### Key takeaways & lessons learned
+- 
 
 ## More docs
 
