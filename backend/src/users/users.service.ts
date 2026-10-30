@@ -23,6 +23,13 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { email } });
   }
 
+  findPublicByEmail(email: string): Promise<PublicUser | null> {
+    return this.prisma.user.findUnique({
+      where: { email },
+      select: USER_PUBLIC_SELECT,
+    });
+  }
+
   findPublicById(id: string): Promise<PublicUser | null> {
     return this.prisma.user.findUnique({
       where: { id },

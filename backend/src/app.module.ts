@@ -9,6 +9,7 @@ import { AppService } from './app.service.js';
 import { BooksModule } from './books/books.module.js';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter.js';
 import { PrismaModule } from './prisma/prisma.module.js';
+import { ShelvesModule } from './shelves/shelves.module.js';
 import { UsersModule } from './users/users.module.js';
 
 @Module({
@@ -22,6 +23,7 @@ import { UsersModule } from './users/users.module.js';
     AuthModule,
     ActivityModule,
     BooksModule,
+    ShelvesModule,
   ],
   controllers: [AppController],
   providers: [
