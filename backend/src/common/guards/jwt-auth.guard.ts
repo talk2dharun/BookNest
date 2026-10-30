@@ -33,6 +33,10 @@ export class JwtAuthGuard implements CanActivate {
       return true;
     }
 
+    if (context.getType() !== 'http') {
+      return true;
+    }
+
     const request = context.switchToHttp().getRequest<Request>();
     const path = (request.originalUrl ?? request.url).split('?')[0];
     if (path.startsWith('/api/docs')) {

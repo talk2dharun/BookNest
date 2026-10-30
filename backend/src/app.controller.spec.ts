@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller.js';
-import { AppService } from './app.service.js';
 import { PrismaService } from './prisma/prisma.service.js';
 
 describe('AppController', () => {
@@ -10,7 +9,6 @@ describe('AppController', () => {
     const app: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
       providers: [
-        AppService,
         { provide: PrismaService, useValue: { $queryRaw: async () => 1 } },
       ],
     }).compile();
@@ -19,8 +17,12 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+    it('points at health and docs', () => {
+      expect(appController.root()).toEqual({
+        name: 'BookNest API',
+        health: '/health',
+        docs: '/api/docs',
+      });
     });
   });
 });

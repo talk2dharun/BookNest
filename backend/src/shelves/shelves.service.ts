@@ -13,6 +13,7 @@ import type { CreateShelfDto } from './dto/create-shelf.dto.js';
 import type { ShareShelfDto } from './dto/share-shelf.dto.js';
 import type { UpdateShareDto } from './dto/update-share.dto.js';
 import type { UpdateShelfDto } from './dto/update-shelf.dto.js';
+import { RealtimeService } from '../realtime/realtime.service.js';
 import {
   AccessRole,
   ShelfAccessService,
@@ -46,6 +47,7 @@ export class ShelvesService {
     private readonly access: ShelfAccessService,
     private readonly users: UsersService,
     private readonly activity: ActivityService,
+    private readonly realtime: RealtimeService,
   ) {}
 
   create(ownerId: string, dto: CreateShelfDto) {
@@ -177,6 +179,7 @@ export class ShelvesService {
   async remove(userId: string, shelfId: string) {
     await this.access.requireRole(shelfId, userId, AccessRole.OWNER);
     await this.prisma.shelf.delete({ where: { id: shelfId } });
+    await this.realtime.closeShelfRoom(shelfId);
   }
 
   async addBook(userId: string, shelfId: string, dto: AddShelfBookDto) {
@@ -207,6 +210,10 @@ export class ShelvesService {
       throw error;
     }
 
+    this.realtime.emitToShelf(shelfId, 'shelf:book-added', {
+      shelfId,
+      bookId: book.id,
+    });
     return this.findOne(userId, shelfId);
   }
 
@@ -220,6 +227,10 @@ export class ShelvesService {
     }
     await this.prisma.shelfBook.delete({
       where: { shelfId_bookId: { shelfId, bookId } },
+    });
+    this.realtime.emitToShelf(shelfId, 'shelf:book-removed', {
+      shelfId,
+      bookId,
     });
   }
 
@@ -270,6 +281,16 @@ export class ShelvesService {
       throw error;
     }
 
+    await this.realtime.joinUserToShelf(target.id, shelfId);
+    this.realtime.emitToUser(target.id, 'shelf:shared', {
+      shelfId,
+      role: dto.role,
+    });
+    this.realtime.emitActivityNew([userId, target.id], {
+      type: ActivityType.SHELF_SHARED,
+      message: `Shared "${shelf.name}" with ${target.name} as ${dto.role}`,
+    });
+
     return this.findOne(userId, shelfId);
   }
 
@@ -314,6 +335,15 @@ export class ShelvesService {
       );
     });
 
+    this.realtime.emitToUser(collaboratorId, 'shelf:role-changed', {
+      shelfId,
+      role: dto.role,
+    });
+    this.realtime.emitActivityNew([userId, collaboratorId], {
+      type: ActivityType.ROLE_CHANGED,
+      message: `Changed ${share.user.name}'s role on "${shelf.name}" to ${dto.role}`,
+    });
+
     return this.findOne(userId, shelfId);
   }
 
@@ -344,6 +374,15 @@ export class ShelvesService {
         },
         tx,
       );
+    });
+
+    await this.realtime.removeUserFromShelf(collaboratorId, shelfId);
+    this.realtime.emitToUser(collaboratorId, 'shelf:access-removed', {
+      shelfId,
+    });
+    this.realtime.emitActivityNew([userId, collaboratorId], {
+      type: ActivityType.COLLABORATOR_REMOVED,
+      message: `Removed ${share.user.name} from "${shelf.name}"`,
     });
   }
 }

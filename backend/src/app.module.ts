@@ -5,10 +5,12 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ActivityModule } from './activity/activity.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { AppController } from './app.controller.js';
-import { AppService } from './app.service.js';
 import { BooksModule } from './books/books.module.js';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter.js';
+import { DashboardModule } from './dashboard/dashboard.module.js';
+import { LendingModule } from './lending/lending.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
+import { RealtimeModule } from './realtime/realtime.module.js';
 import { ShelvesModule } from './shelves/shelves.module.js';
 import { UsersModule } from './users/users.module.js';
 
@@ -22,12 +24,14 @@ import { UsersModule } from './users/users.module.js';
     UsersModule,
     AuthModule,
     ActivityModule,
+    RealtimeModule,
     BooksModule,
+    LendingModule,
     ShelvesModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [
-    AppService,
     { provide: APP_FILTER, useClass: HttpExceptionFilter },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],

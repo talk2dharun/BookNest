@@ -47,6 +47,7 @@ export class AuthController {
     return this.auth.refresh(req.cookies?.[REFRESH_COOKIE_NAME], res);
   }
 
+  // Logout is public so an expired access token can still clear the refresh cookie.
   @Public()
   @HttpCode(200)
   @Post('logout')
