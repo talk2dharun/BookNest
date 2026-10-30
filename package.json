@@ -1,0 +1,12 @@
+{
+  "name": "booknest",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BookNest - Personal reading tracker and library sharing",
+  "scripts": {
+    "seed": "npm --prefix backend run seed",
+    "test:e2e": "npm --prefix backend run test:e2e",
+    "build:backend": "npm --prefix backend run build",
+    "build:frontend": "npm --prefix frontend run build"
+  }
+}
