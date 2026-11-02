@@ -55,10 +55,17 @@ export async function refreshSession(): Promise<{
   user: User;
 } | null> {
   const run = async () => {
-    const res = await fetch(`${API_URL}/auth/refresh`, {
-      method: 'POST',
-      credentials: 'include',
-    });
+    let res: Response;
+    try {
+      res = await fetch(`${API_URL}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (e) {
+      console.error('Refresh session failed', e);
+      accessToken = null;
+      return null;
+    }
     if (!res.ok) {
       accessToken = null;
       return null;
