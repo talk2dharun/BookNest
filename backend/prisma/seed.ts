@@ -8,10 +8,12 @@ import {
   ShelfRole,
 } from '../src/generated/prisma/client.js';
 
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL environment variable is required to run the seed script.');
+}
+
 const adapter = new PrismaPg({
-  connectionString:
-    process.env.DATABASE_URL ||
-    'postgresql://booknest:booknest@localhost:5433/booknest',
+  connectionString: process.env.DATABASE_URL,
 });
 const prisma = new PrismaClient({ adapter });
 
@@ -361,9 +363,9 @@ async function main() {
     recipientIds: [alice.id, bob.id],
   });
 
-  console.log('Seed complete. Test logins:');
-  console.log('  alice@test.com / Password@123');
-  console.log('  bob@test.com / Password@123');
+  console.log('Seed complete. Test logins (TEST-ONLY):');
+  console.log('  alice@test.com / Password@123 (TEST-ONLY)');
+  console.log('  bob@test.com   / Password@123 (TEST-ONLY)');
 }
 
 main()
