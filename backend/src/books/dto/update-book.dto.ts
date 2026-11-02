@@ -40,9 +40,9 @@ export class UpdateBookDto {
   totalPages?: number | null;
 
   @IsOptional()
-  @IsInt()
-  @Min(1)
-  @Max(5)
+  @IsInt({ message: 'Rating must be an integer between 1 and 5' })
+  @Min(1, { message: 'Rating must be between 1 and 5' })
+  @Max(5, { message: 'Rating must be between 1 and 5' })
   rating?: number | null;
 
   @IsOptional()
