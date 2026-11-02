@@ -1,35 +1,57 @@
 # Dependencies
 node_modules/
+.pnp
+.pnp.*
 
-# Build output
+# Build & compiled output
 dist/
-.next/
-out/
 build/
+out/
+.next/
 *.tsbuildinfo
+backend/src/generated/
 
-# Environment (never commit real secrets)
+# Environment files (never commit real secrets)
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 backend/.env
+backend/.env.*
+!backend/.env.example
 frontend/.env
+frontend/.env.*
+!frontend/.env.example
 
-# Tests and coverage
-coverage/
+# Python & virtual environments
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
 
-# Logs and OS
+# Logs
+logs/
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Uploads and temporary/local database files
+uploads/
+backend/prisma/*.db
+backend/prisma/*.db-journal
+*.sqlite
+*.sqlite3
+
+# Operating System metadata
 .DS_Store
 Thumbs.db
 
-# IDE
+# IDE and editors
 .idea/
 .vscode/*
 !.vscode/extensions.json
 
-# Prisma generated client (run npx prisma generate after clone)
-backend/src/generated/
-backend/prisma/*.db
-backend/prisma/*.db-journal
+# Coverage reports
+coverage/
