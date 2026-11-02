@@ -4,6 +4,12 @@ BookNest is a reading tracker. You keep your own library, log progress, organise
 
 The project is a NestJS API plus a Next.js App Router UI, with PostgreSQL in Docker. It is meant to be cloned, started, and exercised through the API or the browser.
 
+## Demo Video
+
+<!-- Replace this placeholder with your public demo video URL before submitting -->
+- **Video Walkthrough:** [Demo Video Link Placeholder](https://youtube.com)
+
+
 ## Prerequisites
 
 - Node.js 24+
