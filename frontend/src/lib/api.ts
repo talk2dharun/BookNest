@@ -155,8 +155,8 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
 
 export function authApi() {
   return {
-    signup: (data: { name: string; email: string; password: string }) =>
-      api<{ accessToken: string; user: User }>('/auth/signup', {
+    register: (data: { name: string; email: string; password: string }) =>
+      api<{ accessToken: string; user: User }>('/auth/register', {
         method: 'POST',
         json: data,
         retry: false,

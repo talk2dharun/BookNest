@@ -73,7 +73,7 @@ export default function LoginPage() {
         </button>
       </form>
       <p className="mt-4 text-sm text-[var(--ink-muted)]">
-        No account? <Link href="/signup" className="font-semibold text-[var(--ink)]">Sign up</Link>
+        No account? <Link href="/register" className="font-semibold text-[var(--ink)]">Register</Link>
       </p>
     </div>
   );

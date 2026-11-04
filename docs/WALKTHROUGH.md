@@ -4,7 +4,7 @@ Eight files that carry the interesting behaviour. Read them in this order.
 
 ## 1. `backend/src/auth/auth.service.ts`
 
-Signup hashes the password with bcrypt (cost 12) and stores the email lowercase. Login uses the same generic message for unknown email and bad password. `issueSession` signs a short JWT and stores only an HMAC of the refresh token. `refresh` rotates: revoke the presented row, then issue a new cookie. If `revokedAt` is already set, every session for that user is revoked.
+Register hashes the password with bcrypt (cost 12) and stores the email lowercase. Login uses the same generic message for unknown email and bad password. `issueSession` signs a short JWT and stores only an HMAC of the refresh token. `refresh` rotates: revoke the presented row, then issue a new cookie. If `revokedAt` is already set, every session for that user is revoked.
 
 ## 2. Refresh cookie path — `backend/src/common/constants.ts` + `auth.service.ts`
 

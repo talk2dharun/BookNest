@@ -6,8 +6,8 @@ import { FormEvent, useState } from 'react';
 import { ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 
-export default function SignupPage() {
-  const { signup } = useAuth();
+export default function RegisterPage() {
+  const { register } = useAuth();
   const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -33,7 +33,7 @@ export default function SignupPage() {
 
     setPending(true);
     try {
-      await signup(name, email, password);
+      await register(name, email, password);
       router.push('/dashboard');
     } catch (err) {
       if (err instanceof ApiError) {
@@ -56,7 +56,7 @@ export default function SignupPage() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4">
-      <h1 className="font-serif text-3xl">Create an account</h1>
+      <h1 className="font-serif text-3xl">Register</h1>
       <form onSubmit={onSubmit} noValidate className="mt-8 space-y-4 rounded-2xl bg-white p-6 shadow-sm">
         <div>
           <label className="label" htmlFor="name">Name</label>
@@ -78,7 +78,7 @@ export default function SignupPage() {
         </div>
         {error ? <p className="error-text">{error}</p> : null}
         <button className="btn w-full" disabled={pending}>
-          {pending ? 'Creating...' : 'Sign up'}
+          {pending ? 'Registering...' : 'Register'}
         </button>
       </form>
       <p className="mt-4 text-sm text-[var(--ink-muted)]">
@@ -87,3 +87,4 @@ export default function SignupPage() {
     </div>
   );
 }
+

@@ -20,7 +20,7 @@ import {
   UsersService,
 } from '../users/users.service.js';
 import type { LoginDto } from './dto/login.dto.js';
-import type { SignupDto } from './dto/signup.dto.js';
+import type { RegisterDto } from './dto/register.dto.js';
 
 const BCRYPT_COST = 12;
 
@@ -33,7 +33,7 @@ export class AuthService {
     private readonly config: ConfigService,
   ) {}
 
-  async signup(dto: SignupDto, res: Response) {
+  async register(dto: RegisterDto, res: Response) {
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_COST);
     let user: PublicUser;
     try {

@@ -1,9 +1,9 @@
 # Demo script (about 5 minutes, two browser windows)
 
-Use two browsers or one normal window and one private window. Seed is optional; this script signs up two fresh users.
+Use two browsers or one normal window and one private window. Seed is optional; this script registers two fresh users.
 
-1. **Sign up two users**  
-   Window A: http://localhost:3000/signup — Ada, `ada-demo@example.com`, `Password123`.  
+1. **Register two users**  
+   Window A: http://localhost:3000/register — Ada, `ada-demo@example.com`, `Password123`.  
    Window B: same for Beau, `beau-demo@example.com`, `Password123`.
 
 2. **Add books and a shelf**  

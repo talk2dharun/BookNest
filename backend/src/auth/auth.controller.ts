@@ -10,7 +10,7 @@ import {
 import { Public } from '../common/decorators/public.decorator.js';
 import { AuthService } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
-import { SignupDto } from './dto/signup.dto.js';
+import { RegisterDto } from './dto/register.dto.js';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -19,12 +19,12 @@ export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   @Public()
-  @Post('signup')
-  signup(
-    @Body() dto: SignupDto,
+  @Post('register')
+  register(
+    @Body() dto: RegisterDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    return this.auth.signup(dto, res);
+    return this.auth.register(dto, res);
   }
 
   @Public()

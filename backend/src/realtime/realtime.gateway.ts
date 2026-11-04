@@ -63,7 +63,7 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection {
       return;
     }
 
-    socket.join(`user:${userId}`);
+    await socket.join(`user:${userId}`);
 
     const shelves = await this.prisma.shelf.findMany({
       where: {
@@ -72,7 +72,7 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection {
       select: { id: true },
     });
     for (const shelf of shelves) {
-      socket.join(`shelf:${shelf.id}`);
+      await socket.join(`shelf:${shelf.id}`);
     }
 
     this.logger.debug(`socket ${socket.id} joined user:${userId}`);

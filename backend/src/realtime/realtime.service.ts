@@ -10,7 +10,7 @@ export class RealtimeService {
   }
 
   emitToUsers(userIds: string[], event: string, payload: unknown) {
-    for (const userId of [...new Set(userIds)]) {
+    for (const userId of new Set(userIds)) {
       this.emitToUser(userId, event, payload);
     }
   }

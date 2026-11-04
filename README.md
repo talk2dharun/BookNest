@@ -4,10 +4,11 @@ BookNest is a reading tracker. You keep your own library, log progress, organise
 
 The project is a NestJS API plus a Next.js App Router UI, with PostgreSQL in Docker. It is meant to be cloned, started, and exercised through the API or the browser.
 
+> **Evaluator guide:** [Read the detailed technical overview](docs/TECHNICAL_OVERVIEW.md) for the complete stack, architecture, data model, security approach, feature flows, deployment, testing, and suggested evaluation path.
+
 ## Demo Video
 
-<!-- Replace this placeholder with your public demo video URL before submitting -->
-- **Video Walkthrough:** [Demo Video Link Placeholder](https://youtube.com)
+- **Video Walkthrough:** [Demo Video Link Placeholder](https://www.loom.com/share/dcda01a2c4af4336983c4645860beb6b)
 
 
 ## Prerequisites
@@ -186,7 +187,7 @@ The partial unique index is not expressible in Prisma schema, so it lives in SQL
 
 | # | Requirement | Implementation / Location | Tested In |
 |---|-------------|---------------------------|-----------|
-| 1 | Sign up (name, email, password rules) | `POST /auth/signup` in [`auth.controller.ts`](file:///d:/Projects/BookNest/backend/src/auth/auth.controller.ts), [`signup.dto.ts`](file:///d:/Projects/BookNest/backend/src/auth/dto/signup.dto.ts) | `critical-path.e2e-spec.ts` |
+| 1 | Register (name, email, password rules) | `POST /auth/register` in [`auth.controller.ts`](file:///d:/Projects/BookNest/backend/src/auth/auth.controller.ts), [`register.dto.ts`](file:///d:/Projects/BookNest/backend/src/auth/dto/register.dto.ts) | `critical-path.e2e-spec.ts` |
 | 2 | bcrypt hash cost 12, never returned | [`auth.service.ts`](file:///d:/Projects/BookNest/backend/src/auth/auth.service.ts), `USER_SELECT` strips `passwordHash` | `critical-path.e2e-spec.ts` |
 | 3 | 15m access token + 7d httpOnly refresh cookie | `issueSession` in [`auth.service.ts`](file:///d:/Projects/BookNest/backend/src/auth/auth.service.ts), cookie path `/auth` | `critical-path.e2e-spec.ts` |
 | 4 | Refresh rotation, reuse revokes all sessions | `refresh` in [`auth.service.ts`](file:///d:/Projects/BookNest/backend/src/auth/auth.service.ts), `RefreshToken.revokedAt` | `critical-path.e2e-spec.ts` |
@@ -239,6 +240,7 @@ The partial unique index is not expressible in Prisma schema, so it lives in SQL
 
 ## More docs
 
+- [docs/TECHNICAL_OVERVIEW.md](docs/TECHNICAL_OVERVIEW.md) — detailed stack, architecture, methodology, security, and evaluator guide
 - [docs/WALKTHROUGH.md](docs/WALKTHROUGH.md) — eight files to explain on a call
 - [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) — five-minute two-browser demo
 - [api.http](api.http) — sample REST calls, including a forbidden viewer action

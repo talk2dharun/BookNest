@@ -7,7 +7,7 @@ import {
   MinLength,
 } from 'class-validator';
 
-export class SignupDto {
+export class RegisterDto {
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim() : value,
   )
@@ -30,3 +30,4 @@ export class SignupDto {
   })
   password!: string;
 }
+

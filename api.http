@@ -6,8 +6,8 @@
 ### Health
 GET {{base}}/health
 
-### Signup (owner)
-POST {{base}}/auth/signup
+### Register (owner)
+POST {{base}}/auth/register
 Content-Type: application/json
 
 {
@@ -16,8 +16,8 @@ Content-Type: application/json
   "password": "Password123"
 }
 
-### Signup (editor)
-POST {{base}}/auth/signup
+### Register (editor)
+POST {{base}}/auth/register
 Content-Type: application/json
 
 {
@@ -26,8 +26,8 @@ Content-Type: application/json
   "password": "Password123"
 }
 
-### Signup (viewer)
-POST {{base}}/auth/signup
+### Register (viewer)
+POST {{base}}/auth/register
 Content-Type: application/json
 
 {

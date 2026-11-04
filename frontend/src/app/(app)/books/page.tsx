@@ -46,6 +46,7 @@ function BooksPageInner() {
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSearchInput(search);
   }, [search]);
 

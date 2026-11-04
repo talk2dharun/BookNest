@@ -44,21 +44,21 @@ describe('Critical paths (e2e)', () => {
     await app.close();
   });
 
-  function signup(name: string, email: string) {
+  function register(name: string, email: string) {
     return request(app.getHttpServer())
-      .post('/auth/signup')
+      .post('/auth/register')
       .send({ name, email, password });
   }
 
-  it('signup, login, 401, refresh rotation and reuse', async () => {
-    const signupRes = await signup('Ada', emailA).expect(201);
-    createdUserIds.push(signupRes.body.user.id);
-    expect(signupRes.body.accessToken).toBeDefined();
-    expect(signupRes.body.user.passwordHash).toBeUndefined();
-    const cookies = signupRes.headers['set-cookie'];
+  it('register, login, 401, refresh rotation and reuse', async () => {
+    const registerRes = await register('Ada', emailA).expect(201);
+    createdUserIds.push(registerRes.body.user.id);
+    expect(registerRes.body.accessToken).toBeDefined();
+    expect(registerRes.body.user.passwordHash).toBeUndefined();
+    const cookies = registerRes.headers['set-cookie'];
     expect(cookies?.join(';')).toMatch(/refresh_token=/);
 
-    await signup('Ada', emailA).expect(409);
+    await register('Ada', emailA).expect(409);
 
     await request(app.getHttpServer())
       .post('/auth/login')
@@ -101,7 +101,7 @@ describe('Critical paths (e2e)', () => {
   });
 
   it('progress validation and auto-finish', async () => {
-    const a = await signup('Owner', emailB).expect(201);
+    const a = await register('Owner', emailB).expect(201);
     createdUserIds.push(a.body.user.id);
     const token = a.body.accessToken;
 
@@ -171,10 +171,10 @@ describe('Critical paths (e2e)', () => {
       .post('/auth/login')
       .send({ email: emailB, password })
       .expect(200);
-    const editorRes = await signup('Editor', emailC).expect(201);
+    const editorRes = await register('Editor', emailC).expect(201);
     createdUserIds.push(editorRes.body.user.id);
     const viewerEmail = `e2e-v-${stamp}@example.com`;
-    const viewerRes = await signup('Viewer', viewerEmail).expect(201);
+    const viewerRes = await register('Viewer', viewerEmail).expect(201);
     createdUserIds.push(viewerRes.body.user.id);
 
     const ownerToken = ownerRes.body.accessToken;
